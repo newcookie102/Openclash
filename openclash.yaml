@@ -1,0 +1,593 @@
+# Openclash 优化配置文件
+
+# 基本设置
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: false
+
+# 性能优化
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+tcp-concurrent: true
+
+sniffer:
+  enable: true
+  sniffing:
+    - tls
+    - http
+  force-domain:
+    - '+.googlevideo.com'
+
+# TUN 模式
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+  auto-route: true
+  auto-detect-interface: true
+
+# DNS 设置
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - 'localhost.ptlogin2.qq.com'
+  nameserver:
+    - 127.0.0.1:5635  # AdGuard Home
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  fallback:
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+  default-nameserver:
+    - 119.29.29.29
+    - 223.5.5.5
+
+# 代理提供商
+proxy-providers:
+  机场订阅:
+    type: http
+    url: "https://tudou-dyapi.tudouyun.top/api/v1/client/subscribe?token=f0d5eda7efd87a99e2e94f8790276706"
+    interval: 3600
+    path: ./proxies/机场订阅.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+# 规则提供商
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  BanProgramAD:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list"
+    path: ./ruleset/BanProgramAD.yaml
+    interval: 86400
+
+  LocalAreaNetwork:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list"
+    path: ./ruleset/LocalAreaNetwork.yaml
+    interval: 86400
+
+  GoogleFCM:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list"
+    path: ./ruleset/GoogleFCM.yaml
+    interval: 86400
+
+  GoogleCN:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list"
+    path: ./ruleset/GoogleCN.yaml
+    interval: 86400
+
+  SteamCN:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/SteamCN.list"
+    path: ./ruleset/SteamCN.yaml
+    interval: 86400
+
+  Microsoft:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Microsoft.list"
+    path: ./ruleset/Microsoft.yaml
+    interval: 86400
+
+  Apple:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list"
+    path: ./ruleset/Apple.yaml
+    interval: 86400
+
+  Telegram:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Telegram.list"
+    path: ./ruleset/Telegram.yaml
+    interval: 86400
+
+  OpenAi:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list"
+    path: ./ruleset/OpenAi.yaml
+    interval: 86400
+
+  Claude:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Claude.list"
+    path: ./ruleset/Claude.yaml
+    interval: 86400
+
+  Bing:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Bing.list"
+    path: ./ruleset/Bing.yaml
+    interval: 86400
+
+  YouTube:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/YouTube.list"
+    path: ./ruleset/YouTube.yaml
+    interval: 86400
+
+  Netflix:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Netflix.list"
+    path: ./ruleset/Netflix.yaml
+    interval: 86400
+
+  ChinaMedia:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaMedia.list"
+    path: ./ruleset/ChinaMedia.yaml
+    interval: 86400
+
+  ProxyMedia:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list"
+    path: ./ruleset/ProxyMedia.yaml
+    interval: 86400
+
+  ProxyGFWlist:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list"
+    path: ./ruleset/ProxyGFWlist.yaml
+    interval: 86400
+
+  ChinaDomain:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list"
+    path: ./ruleset/ChinaDomain.yaml
+    interval: 86400
+
+  GitHub:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Github.list"
+    path: ./ruleset/Github.yaml
+    interval: 86400
+
+  PayPal:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/PayPal.list"
+    path: ./ruleset/PayPal.yaml
+    interval: 86400
+
+# 代理组设置
+proxy-groups:
+  - name: "🚀 节点选择"
+    type: select
+    proxies:
+      - 🔀 负载均衡
+      - 🔄 故障转移
+      - 🔀 香港负载均衡
+      - 🔀 美国负载均衡
+      - ♻️ 自动选择
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Rocket.png
+
+  - name: "🚀 手动切换"
+    type: select
+    use:
+      - 机场订阅
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Static.png
+
+  - name: "♻️ 自动选择"
+    type: url-test
+    use:
+      - 机场订阅
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Auto.png
+
+  - name: "🔀 负载均衡"
+    type: load-balance
+    use:
+      - 机场订阅
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: round-robin
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Round_Robin.png
+
+  - name: "🔄 故障转移"
+    type: fallback
+    use:
+      - 机场订阅
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bypass.png
+
+  - name: "🔀 香港负载均衡"
+    type: load-balance
+    use:
+      - 机场订阅
+    filter: "(?i)(港|HK|Hong)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: consistent-hashing
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png
+
+  - name: "🔀 美国负载均衡"
+    type: load-balance
+    use:
+      - 机场订阅
+    filter: "(?i)(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: consistent-hashing
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png
+
+  - name: "📲 电报消息"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔀 负载均衡
+      - 🔄 故障转移
+      - ♻️ 自动选择
+      - 🇸🇬 狮城节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png
+
+  - name: "💬 OpenAi"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔀 美国负载均衡
+      - 🔄 故障转移
+      - ♻️ 自动选择
+      - 🇺🇲 美国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bot.png
+
+  - name: "🤖 Claude"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔀 美国负载均衡
+      - 🔄 故障转移
+      - ♻️ 自动选择
+      - 🇺🇲 美国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Bot.png
+
+  - name: "🔍 Bing"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔀 美国负载均衡
+      - 🔄 故障转移
+      - ♻️ 自动选择
+      - 🇺🇲 美国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png
+
+  - name: "📹 油管视频"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔀 负载均衡
+      - 🔄 故障转移
+      - ♻️ 自动选择
+      - 🇸🇬 狮城节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png
+
+  - name: "🎥 奈飞视频"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔀 负载均衡
+      - 🔄 故障转移
+      - ♻️ 自动选择
+      - 🇸🇬 狮城节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix.png
+
+  - name: "🌍 国外媒体"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔀 负载均衡
+      - 🔄 故障转移
+      - ♻️ 自动选择
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Streaming.png
+
+  - name: "🌏 国内媒体"
+    type: select
+    proxies:
+      - DIRECT
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/bilibili.png
+
+  - name: "📢 谷歌FCM"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🇺🇲 美国节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google.png
+
+  - name: "Ⓜ️ 微软服务"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🇺🇲 美国节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png
+
+  - name: "🍎 苹果服务"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🇺🇲 美国节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Apple.png
+
+  - name: "🎮 游戏平台"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🇺🇲 美国节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png
+
+  - name: "🎯 全球直连"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - ♻️ 自动选择
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Direct.png
+
+  - name: "🛑 广告拦截"
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Advertising.png
+
+  - name: "🍃 应用净化"
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AdBlack.png
+
+  - name: "🐟 漏网之鱼"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔀 负载均衡
+      - 🔄 故障转移
+      - ♻️ 自动选择
+      - DIRECT
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - 🚀 手动切换
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Final.png
+
+  - name: "🌐 SSID策略"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - DIRECT
+    ssid-policy:
+      "Home_SSID": DIRECT
+      "Work_SSID": 🚀 节点选择
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/SSID.png
+
+  - name: "🇭🇰 香港节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(港|HK|Hong)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png
+
+  - name: "🇯🇵 日本节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|[^-]日|JP|Japan)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png
+
+  - name: "🇺🇲 美国节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png
+
+  - name: "🇨🇳 台湾节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(台|新北|彰化|TW|Taiwan)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Taiwan.png
+
+  - name: "🇸🇬 狮城节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(新加坡|坡|狮城|SG|Singapore)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png
+
+  - name: "🇰🇷 韩国节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(KR|Korea|KOR|首尔|韩|韓)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Korea.png
+
+# 规则设置
+rules:
+  - RULE-SET,LocalAreaNetwork,🎯 全球直连
+  - RULE-SET,GoogleCN,🎯 全球直连
+  - RULE-SET,SteamCN,🎯 全球直连
+  - RULE-SET,reject,🛑 广告拦截
+  - RULE-SET,BanProgramAD,🍃 应用净化
+  - RULE-SET,OpenAi,💬 OpenAi
+  - RULE-SET,Claude,🤖 Claude
+  - RULE-SET,Bing,🔍 Bing
+  - RULE-SET,Telegram,📲 电报消息
+  - RULE-SET,YouTube,📹 油管视频
+  - RULE-SET,Netflix,🎥 奈飞视频
+  - RULE-SET,GitHub,🚀 节点选择
+  - RULE-SET,PayPal,🚀 节点选择
+  - RULE-SET,Microsoft,Ⓜ️ 微软服务
+  - RULE-SET,Apple,🍎 苹果服务
+  - RULE-SET,GoogleFCM,📢 谷歌FCM
+  - RULE-SET,ChinaMedia,🌏 国内媒体
+  - RULE-SET,ProxyMedia,🌍 国外媒体
+  - RULE-SET,ProxyGFWlist,🚀 节点选择
+  - RULE-SET,ChinaDomain,🎯 全球直连
+  - GEOIP,CN,🎯 全球直连,no-resolve
+  - MATCH,🐟 漏网之鱼
+
+# 自定义规则
+custom_rules:
+  - DOMAIN-SUFFIX,custom-domain.com,🚀 节点选择
+  - IP-CIDR,192.168.1.0/24,DIRECT
+
+# 定时任务
+cron:
+  - name: "更新订阅"
+    interval: 86400
+    command: "clash.exe -d ."
+
+# 健康检查
+health-check:
+  enable: true
+  url: http://www.gstatic.com/generate_204
+  interval: 300
+  timeout: 5
+
+
