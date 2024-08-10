@@ -1,0 +1,554 @@
+# OpenClash 优化配置文件
+
+# 基本设置
+mixed-port: 7890
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: info
+ipv6: false
+
+# 性能优化
+profile:
+  store-selected: true
+  store-fake-ip: true
+  geoip-url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country.mmdb"
+
+tcp-concurrent: true
+
+sniffer:
+  enable: true
+  sniffing:
+    - tls
+    - http
+  force-domain:
+    - '+.googlevideo.com'
+
+# TUN 模式优化
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+  auto-route: true
+  auto-detect-interface: true
+
+# DNS 设置优化
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - 'localhost.ptlogin2.qq.com'
+    - 'dns.msftncsi.com'
+    - 'www.msftncsi.com'
+    - 'www.msftconnecttest.com'
+  nameserver:
+    - 127.0.0.1:5635  # AdGuard Home
+  fallback:
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
+  default-nameserver:
+    - 119.29.29.29
+    - 223.5.5.5
+  nameserver-policy:
+    'geosite:cn,private': [https://dns.alidns.com/dns-query, https://doh.pub/dns-query]
+    'geosite:category-ads-all': [rcode://success]
+    'geosite:geolocation-!cn': [https://dns.google/dns-query, https://cloudflare-dns.com/dns-query]
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+
+# 代理提供商
+proxy-providers:
+  机场订阅:
+    type: http
+    url: "https://tudou-dyapi.tudouyun.top/api/v1/client/subscribe?token=f0d5eda7efd87a99e2e94f8790276706"
+    interval: 604800  # 每周更新
+    path: ./proxies/机场订阅.yaml
+    health-check:
+      enable: true
+      interval: 3600
+      url: http://www.gstatic.com/generate_204
+
+# 规则提供商
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
+    path: ./ruleset/apple.yaml
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt"
+    path: ./ruleset/google.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  private:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
+    path: ./ruleset/private.yaml
+    interval: 86400
+
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+
+  greatfire:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt"
+    path: ./ruleset/greatfire.yaml
+    interval: 86400
+
+  tld-not-cn:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt"
+    path: ./ruleset/tld-not-cn.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+# 代理组设置（优化负载均衡）
+proxy-groups:
+  - name: "🚀 节点选择"
+    type: select
+    proxies:
+      - ♻️ 自动选择
+      - 🔯 故障转移
+      - 🔮 负载均衡
+      - 🔮 香港负载均衡
+      - 🔮 日本负载均衡
+      - 🔮 美国负载均衡
+      - 🚀 手动选择
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇸🇬 狮城节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+      - DIRECT
+    use:
+      - 机场订阅
+
+  - name: "🚀 手动选择"
+    type: select
+    use:
+      - 机场订阅
+
+  - name: "♻️ 自动选择"
+    type: url-test
+    use:
+      - 机场订阅
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: "🔯 故障转移"
+    type: fallback
+    use:
+      - 机场订阅
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: "🔮 负载均衡"
+    type: load-balance
+    use:
+      - 机场订阅
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: consistent-hashing
+    lazy: true
+
+  - name: "🔮 香港负载均衡"
+    type: load-balance
+    use:
+      - 机场订阅
+    filter: "(?i)(港|HK|Hong)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: round-robin
+    lazy: true
+
+  - name: "🔮 日本负载均衡"
+    type: load-balance
+    use:
+      - 机场订阅
+    filter: "(?i)(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|[^-]日|JP|Japan)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: consistent-hashing
+    lazy: true
+
+  - name: "🔮 美国负载均衡"
+    type: load-balance
+    use:
+      - 机场订阅
+    filter: "(?i)(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: consistent-hashing
+    lazy: true
+
+  - name: "📲 电报消息"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ♻️ 自动选择
+      - 🔮 负载均衡
+      - 🇸🇬 狮城节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+
+  - name: "📹 油管视频"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ♻️ 自动选择
+      - 🔮 负载均衡
+      - 🇸🇬 狮城节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+
+  - name: "🎥 奈飞视频"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ♻️ 自动选择
+      - 🔮 负载均衡
+      - 🇸🇬 狮城节点
+      - 🇭🇰 香港节点
+      - 🇨🇳 台湾节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+      - 🇰🇷 韩国节点
+
+  - name: "🎬 Disney+"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔮 负载均衡
+      - 🇺🇲 美国节点
+      - 🇸🇬 狮城节点
+      - 🇭🇰 香港节点
+      - 🇯🇵 日本节点
+
+  - name: "🍎 苹果服务"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🇺🇲 美国节点
+      - 🇭🇰 香港节点
+
+  - name: "💻 微软服务"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🇺🇲 美国节点
+      - 🇭🇰 香港节点
+
+  - name: "🧠 OpenAI"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🧠 OpenAI Fallback
+      - 🔮 美国负载均衡
+      - 🇺🇲 美国节点
+      - 🇯🇵 日本节点
+      - 🇸🇬 狮城节点
+      - 🇰🇷 韩国节点
+
+  - name: "🧠 OpenAI Fallback"
+    type: fallback
+    use:
+      - 机场订阅
+    filter: "(?i)(美|US|United States|日本|JP|Japan|新加坡|SG|Singapore|韩国|KR|Korea)"
+    url: 'https://chat.openai.com/cdn-cgi/trace'
+    interval: 300
+
+  - name: "🤖 Claude"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🤖 Claude Fallback
+      - 🔮 美国负载均衡
+      - 🇺🇲 美国节点
+      - 🇯🇵 日本节点
+      - 🇸🇬 狮城节点
+      - 🇰🇷 韩国节点
+
+  - name: "🤖 Claude Fallback"
+    type: fallback
+    use:
+      - 机场订阅
+    filter: "(?i)(美|US|United States|日本|JP|Japan|新加坡|SG|Singapore|韩国|KR|Korea)"
+    url: 'https://www.anthropic.com'
+    interval: 300
+
+  - name: "🔍 Bing"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - 🔮 负载均衡
+      - 🇺🇲 美国节点
+      - 🇯🇵 日本节点
+      - 🇸🇬 狮城节点
+      - 🇰🇷 韩国节点
+      - DIRECT
+
+  - name: "🎮 游戏加速"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+      - 🔮 负载均衡
+      - 🇭🇰 香港节点
+      - 🇯🇵 日本节点
+      - 🇺🇲 美国节点
+
+  - name: "🎯 全球直连"
+    type: select
+    proxies:
+      - DIRECT
+      - 🚀 节点选择
+
+  - name: "🛑 全球拦截"
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+
+  - name: "🐟 漏网之鱼"
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ♻️ 自动选择
+      - 🔮 负载均衡
+      - DIRECT
+
+  - name: "🇭🇰 香港节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(港|HK|Hong)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: "🇨🇳 台湾节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(台|TW|Taiwan)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: "🇸🇬 狮城节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(新加坡|坡|SG|Singapore)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: "🇯🇵 日本节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|[^-]日|JP|Japan)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: "🇺🇲 美国节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|United States)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: "🇰🇷 韩国节点"
+    type: url-test
+    use:
+      - 机场订阅
+    filter: "(?i)(KR|Korea|KOR|首尔|韩|韓)"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+# 规则设置
+rules:
+  - RULE-SET,private,🎯 全球直连
+  - RULE-SET,reject,🛑 全球拦截
+  - RULE-SET,icloud,🍎 苹果服务
+  - RULE-SET,apple,🍎 苹果服务
+  - RULE-SET,google,🚀 节点选择
+  - RULE-SET,proxy,🚀 节点选择
+  - RULE-SET,direct,🎯 全球直连
+  - RULE-SET,telegramcidr,📲 电报消息
+  - RULE-SET,lancidr,🎯 全球直连
+  - RULE-SET,cncidr,🎯 全球直连
+  - GEOIP,CN,🎯 全球直连
+  - MATCH,🐟 漏网之鱼
+
+# 自定义规则
+custom_rules:
+  - DOMAIN-SUFFIX,openai.com,🧠 OpenAI
+  - DOMAIN-SUFFIX,anthropic.com,🤖 Claude
+  - DOMAIN-SUFFIX,bing.com,🔍 Bing
+  - DOMAIN-SUFFIX,microsoft.com,💻 微软服务
+  - DOMAIN-SUFFIX,youtube.com,📹 油管视频
+  - DOMAIN-SUFFIX,netflix.com,🎥 奈飞视频
+  - DOMAIN-SUFFIX,disney.com,🎬 Disney+
+  - DOMAIN-SUFFIX,disneyplus.com,🎬 Disney+
+  - DOMAIN-SUFFIX,github.com,🚀 节点选择
+  - DOMAIN-SUFFIX,gitlab.com,🚀 节点选择
+  - DOMAIN-SUFFIX,amazonaws.com,🚀 节点选择
+  - DOMAIN-SUFFIX,zhihu.com,🎯 全球直连
+  - DOMAIN-SUFFIX,bilibili.com,🎯 全球直连
+  - DOMAIN-SUFFIX,douyin.com,🎯 全球直连
+  - DOMAIN-SUFFIX,tiktok.com,🚀 节点选择
+
+# 脚本
+script:
+  code: |
+    def main(ctx, metadata):
+      def is_cn_domain(domain):
+        cn_tlds = [".cn", ".com.cn", ".net.cn", ".org.cn", ".edu.cn"]
+        return any(domain.endswith(tld) for tld in cn_tlds)
+      
+      domain = metadata["host"]
+      if domain == "" and metadata["dst_ip"] != "":
+        try:
+          import socket
+          domain = socket.gethostbyaddr(metadata["dst_ip"])[0]
+        except:
+          pass
+      
+      if is_cn_domain(domain) or ctx.rule_providers["cncidr"].match(metadata["dst_ip"]):
+        ctx.log('[DNS] 使用 AdGuard Home: %s' % domain)
+        metadata["dns"] = "127.0.0.1:5635"  # AdGuard Home
+        return "DIRECT"
+      else:
+        ctx.log('[DNS] 使用代理 DNS: %s' % domain)
+        return "🚀 节点选择"
+
+# 实验性功能
+experimental:
+  ignore-resolve-fail: true
+  sniff-tls-sni: true
+
+# TLS 指纹
+tls-fingerprint: chrome
+
+# 接口
+external-controller: 127.0.0.1:9090
+external-ui: folder
+
+# 定时任务
+cron:
+  - name: "更新订阅"
+    interval: 604800  # 每周更新
+    command: "clash.exe -d ."
+  - name: "更新规则"
+    interval: 604800  # 每周更新
+    command: "clash.exe -d ."
+
+# 高级设置
+url-test-timeout: 5
+test-timeout: 60
+
+# 连接测试
+tcp-concurrent: true
+
+# 自动选择超时设置
+auto-speed-timeout: 5
+
+# 允许局域网连接
+allow-lan: true
+bind-address: '*'
+
+# 模式选择
+mode: rule
+
+# 日志设置
+log-level: info
+
+# 自定义 DNS 映射
+hosts:
+  'mtalk.google.com': 108.177.125.188
+  'dl.google.com': 180.163.151.161
+  'dl.l.google.com': 180.163.151.161
+
