@@ -1,0 +1,158 @@
+# Clash for Android 全面配置文件
+
+# 通用设置
+port: 7890
+socks-port: 7891
+redir-port: 7892
+allow-lan: false  # 关闭 LAN 访问，增加安全性
+mode: rule
+log-level: info  # 日志级别
+external-controller: 127.0.0.1:9090  # 外部控制器
+
+# DNS 设置
+dns:
+  enable: true
+  ipv6: false
+  listen: 0.0.0.0:7874
+  enhanced-mode: fake-ip  # 增强模式，防止 DNS 污染
+  fake-ip-range: 198.18.0.1/16
+  default-nameserver: 
+    - 114.114.114.114  # 国内 DNS
+    - 8.8.8.8  # Google DNS
+  nameserver:
+    - https://dns.google/dns-query  # 使用 DoH 提升隐私保护
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.quad9.net/dns-query  # Quad9 DoH
+    - 202.96.134.133  # 中国电信 DNS
+    - 202.96.128.86  # 中国电信备用 DNS
+  fallback:
+    - tls://1.1.1.1  # 使用 DoT 增加安全性
+    - tls://dns.google
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+  fake-ip-filter:
+    - "*.lan"
+    - "*.localdomain"
+    - "*.example.com"
+    - "ntp.org"
+    - "localhost.ptlogin2.qq.com"
+
+# 订阅设置
+# 确保你的订阅节点能被正确识别并引用
+proxies:
+  - name: "Proxy-1"
+    type: vmess
+    server: your-vmess-server
+    port: 443
+    uuid: your-uuid
+    alterId: 64
+    cipher: auto
+    tls: true
+    network: ws
+    ws-opts:
+      path: /path
+      headers:
+        Host: example.com
+
+  - name: "Proxy-2"
+    type: vmess
+    server: another-vmess-server
+    port: 443
+    uuid: another-uuid
+    alterId: 64
+    cipher: auto
+    tls: true
+    network: ws
+    ws-opts:
+      path: /path
+      headers:
+        Host: example.com
+
+# 代理组设置
+proxy-groups:
+  - name: "Auto-Select"
+    type: url-test
+    proxies:
+      - "Proxy-1"
+      - "Proxy-2"
+    url: http://www.gstatic.com/generate_204
+    interval: 300  # 每5分钟测试一次节点，选择最优节点
+
+  - name: "Streaming"
+    type: select
+    proxies:
+      - "Proxy-1"
+      - "Proxy-2"
+
+  - name: "Gaming"
+    type: select
+    proxies:
+      - "Proxy-1"
+      - "Proxy-2"
+
+  - name: "Fallback"
+    type: fallback
+    proxies:
+      - "Proxy-1"
+      - "Proxy-2"
+    url: http://www.gstatic.com/generate_204
+    interval: 600  # 每10分钟检查一次
+
+  - name: "Claude-Node"
+    type: select
+    proxies:
+      - "Proxy-1"
+      - "Proxy-2"
+
+  - name: "ChatGPT-Node"
+    type: select
+    proxies:
+      - "Proxy-1"
+      - "Proxy-2"
+
+  - name: "Telecom-Optimized"
+    type: url-test
+    proxies:
+      - "Proxy-1"
+      - "Proxy-2"
+    url: http://www.gstatic.com/generate_204
+    interval: 180  # 每3分钟自动测试节点
+
+  - name: "Streaming-Telecom"
+    type: select
+    proxies:
+      - "Proxy-1"
+      - "Proxy-2"
+
+# 规则设置（使用成熟的规则集）
+rules:
+  - RULE-SET,https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Global.yaml,Auto-Select
+  - RULE-SET,https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/China.yaml,DIRECT
+  - RULE-SET,https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/GFWList.yaml,Auto-Select
+  - RULE-SET,https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/StreamingMedia.yaml,Streaming-Telecom
+  - RULE-SET,https://cdn.jsdelivr.net/gh/ACL4SSR/ACL4SSR@master/Clash/Ruleset/Telegram.yaml,Auto-Select
+  - DOMAIN-SUFFIX,claude.ai,Claude-Node  # 手动配置 Claude 的分流规则
+  - DOMAIN-SUFFIX,openai.com,ChatGPT-Node  # 手动配置 ChatGPT 的分流规则
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,baidu.com,DIRECT
+  - DOMAIN-SUFFIX,wechat.com,DIRECT
+  - DOMAIN-SUFFIX,qq.com,DIRECT
+  - GEOIP,CN,DIRECT  # 国内 IP 直连
+  - GEOIP,US,Telecom-Optimized  # 美国流量通过电信优化节点
+  - MATCH,Fallback  # 其他流量使用 Fallback 组
+
+# MITM 设置（可选，用于 HTTPS 解密）
+tproxy:
+  enable: true
+  certificate: |
+    -----BEGIN CERTIFICATE-----
+    Your certificate content here
+    -----END CERTIFICATE-----
+  private-key: |
+    -----BEGIN PRIVATE KEY-----
+    Your private key content here
+    -----END PRIVATE KEY-----
+  skip-cert-verify: false
