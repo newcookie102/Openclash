@@ -1,0 +1,382 @@
+# Clash for Android 终极优化配置文件
+
+# 基础设置
+mixed-port: 7890
+allow-lan: false
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: false
+external-controller: 127.0.0.1:9090
+
+# 高级性能优化
+tcp-concurrent: true
+enable-process: true
+find-process-mode: strict
+interface-name: auto
+routing-mark: 6666
+
+# DNS 设置
+dns:
+  enable: true
+  ipv6: false
+  listen: 0.0.0.0:7874
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "localhost.ptlogin2.qq.com"
+    - "dns.msftncsi.com"
+    - "www.msftncsi.com"
+    - "www.msftconnecttest.com"
+    - "+.stun.*.*"
+    - "+.stun.*.*.*"
+    - "+.stun.*.*.*.*"
+    - "+.stun.*.*.*.*.*"
+    - "lens.l.google.com"
+    - "stun.l.google.com"
+  default-nameserver:
+    - 119.29.29.29
+    - 223.5.5.5
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+    - 'tls://dns.rubyfish.cn:853'
+  fallback:
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+    - tls://1.1.1.1:853
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+
+# 代理提供商
+proxy-providers:
+  airport:
+    type: http
+    url: https://jgjs2-connect.com/api/v1/client/subscribe?token=8b694ae30591c7136f41a32101c92910
+    interval: 3600
+    path: ./proxies/airport.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+# 代理组设置
+proxy-groups:
+  - name: "Auto-Select"
+    type: url-test
+    use:
+      - airport
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: "Fallback"
+    type: fallback
+    use:
+      - airport
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+
+  - name: "Load-Balance"
+    type: load-balance
+    use:
+      - airport
+    strategy: consistent-hashing
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+
+  - name: "CLAUDE"
+    type: select
+    use:
+      - airport
+    proxies:
+      - Auto-Select
+      - Fallback
+      - Load-Balance
+      - DIRECT
+
+  - name: "CHATGPT"
+    type: select
+    use:
+      - airport
+    proxies:
+      - Auto-Select
+      - Fallback
+      - Load-Balance
+      - DIRECT
+
+  - name: "Streaming"
+    type: select
+    use:
+      - airport
+    proxies:
+      - Auto-Select
+      - Load-Balance
+
+  - name: "Global"
+    type: select
+    proxies:
+      - Auto-Select
+      - Fallback
+      - Load-Balance
+      - DIRECT
+
+  - name: "China"
+    type: select
+    proxies:
+      - DIRECT
+      - Auto-Select
+
+  - name: "Telegram"
+    type: select
+    use:
+      - airport
+    proxies:
+      - Auto-Select
+      - Load-Balance
+
+  - name: "Apple"
+    type: select
+    proxies:
+      - DIRECT
+      - Auto-Select
+      - Global
+
+  - name: "Microsoft"
+    type: select
+    proxies:
+      - DIRECT
+      - Auto-Select
+      - Global
+
+  - name: "Game"
+    type: select
+    use:
+      - airport
+    proxies:
+      - Auto-Select
+      - DIRECT
+
+  - name: "AdBlock"
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+
+# 规则提供商
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
+    path: ./ruleset/apple.yaml
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt"
+    path: ./ruleset/google.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  private:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
+    path: ./ruleset/private.yaml
+    interval: 86400
+
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+
+  greatfire:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt"
+    path: ./ruleset/greatfire.yaml
+    interval: 86400
+
+  tld-not-cn:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt"
+    path: ./ruleset/tld-not-cn.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+# 规则设置
+rules:
+  - DOMAIN-SUFFIX,openai.com,CHATGPT
+  - DOMAIN-SUFFIX,ai.com,CHATGPT
+  - DOMAIN-SUFFIX,anthropic.com,CLAUDE
+  - DOMAIN-SUFFIX,claude.ai,CLAUDE
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,AdBlock
+  - RULE-SET,icloud,Apple
+  - RULE-SET,apple,Apple
+  - RULE-SET,google,Global
+  - RULE-SET,proxy,Global
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,lancidr,DIRECT
+  - RULE-SET,cncidr,China
+  - RULE-SET,telegramcidr,Telegram
+  - RULE-SET,gfw,Global
+  - RULE-SET,greatfire,Global
+  - DOMAIN-SUFFIX,ad.com,AdBlock
+  - DOMAIN,api.cognitive.microsofttranslator.com,Microsoft
+  - DOMAIN-SUFFIX,bing.com,Microsoft
+  - DOMAIN-KEYWORD,microsoft,Microsoft
+  - DOMAIN-SUFFIX,msftconnecttest.com,Microsoft
+  - DOMAIN-SUFFIX,windows.com,Microsoft
+  - DOMAIN-SUFFIX,windows.net,Microsoft
+  - DOMAIN-SUFFIX,windowsupdate.com,Microsoft
+  - DOMAIN-SUFFIX,xbox.com,Microsoft
+  - DOMAIN-SUFFIX,xboxlive.com,Microsoft
+  - DOMAIN-SUFFIX,steamcommunity.com,Game
+  - DOMAIN-SUFFIX,steampowered.com,Game
+  - DOMAIN-SUFFIX,steam-chat.com,Game
+  - DOMAIN-KEYWORD,epicgames,Game
+  - DOMAIN-SUFFIX,battlenet.com.cn,Game
+  - DOMAIN-SUFFIX,blizzard.cn,Game
+  - DOMAIN-SUFFIX,googleapis.cn,DIRECT
+  - DOMAIN-KEYWORD,gmail,Global
+  - DOMAIN-KEYWORD,google,Global
+  - DOMAIN-SUFFIX,bilibili.com,DIRECT
+  - DOMAIN-SUFFIX,jd.com,DIRECT
+  - DOMAIN-SUFFIX,qq.com,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,tencent.com,DIRECT
+  - GEOIP,CN,China
+  - MATCH,Global
+
+# TUN 设置
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+  auto-route: true
+  auto-detect-interface: true
+
+# 实验性功能
+experimental:
+  ignore-resolve-fail: true
+  sniff-tls-sni: true
+
+# 配置文件设置
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# 界面设置（仅适用于支持的Clash客户端）
+ui:
+  language: zh-Hans
+
+# 高级设置
+advanced:
+  log-level: info
+  tcp-concurrent: true
+
+# 自定义策略组名称显示（如果客户端支持）
+group-name-aliases:
+  "Auto-Select": "自动选择"
+  "Fallback": "故障转移"
+  "Load-Balance": "负载均衡"
+  "Streaming": "流媒体"
+  "Global": "全球"
+  "China": "中国大陆"
+  "CLAUDE": "Claude AI"
+  "CHATGPT": "ChatGPT"
+  "Telegram": "电报"
+  "Apple": "苹果服务"
+  "Microsoft": "微软服务"
+  "Game": "游戏"
+  "AdBlock": "广告拦截"
+
+# 自定义DNS
+custom-dns:
+  - https://doh.pub/dns-query
+  - https://dns.alidns.com/dns-query
+
+# 延迟测试
+url-test:
+  url: http://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+
+# 定期更新订阅
+cron:
+  proxy-providers:
+    - every: 2h
+      proxies: airport
+
+# 连接管理
+connections:
+  inbound-size: 65535
+  outbound-size: 65535
+
+# 节点选择器
+proxy-selector:
+  enable: true
+
+# 流量统计
+traffic-statistics:
+  enable: true
+  interval: 60
+  exclude-types: "socks, http, tun"
