@@ -1,0 +1,630 @@
+#==========基础配置==========
+port: 7890
+socks-port: 7891
+redir-port: 7892
+mixed-port: 7893
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: info
+ipv6: true
+external-controller: :9090
+external-ui: dashboard
+secret: ${CLASH_SECRET}
+
+# 新增: tproxy端口，用于支持透明代理
+tproxy-port: 7895
+
+#==========DNS 设置==========
+dns:
+  enable: true
+  ipv6: true
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - 'localhost.ptlogin2.qq.com'
+    - '*.local'
+    - '*.crashlytics.com'
+  use-hosts: true
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+    - 223.5.5.5
+    - 119.29.29.29
+  fallback:
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+    - 114.114.114.114
+    - 223.5.5.5
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver-policy:
+    'www.google.com': [8.8.8.8, 8.8.4.4]
+    '+.github.com': [1.1.1.1, 8.8.8.8]
+  cache: true
+  cache-size: 20000
+
+#==========代理提供商==========
+proxy-providers:
+  tudou:
+    type: http
+    url: ${TUDOU_SUBSCRIPTION_URL}
+    interval: 3600
+    path: ./proxies/tudou.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+#==========代理组==========
+proxy-groups:
+  - name: Claude
+    type: select
+    use:
+      - tudou
+
+  - name: Auto
+    type: url-test
+    use:
+      - tudou
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: Fallback
+    type: fallback
+    use:
+      - tudou
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: LoadBalance
+    type: load-balance
+    use:
+      - tudou
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: consistent-hashing
+
+  - name: Proxy
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Fallback
+      - LoadBalance
+      - DIRECT
+
+  - name: Streaming
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Proxy
+
+  - name: Gaming
+    type: url-test
+    use:
+      - tudou
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: GlobalMedia
+    type: select
+    proxies:
+      - Proxy
+      - Auto
+      - DIRECT
+
+  - name: Telegram
+    type: select
+    proxies:
+      - Proxy
+      - Auto
+      - DIRECT
+
+  - name: Apple
+    type: select
+    proxies:
+      - DIRECT
+      - Proxy
+      - Auto
+
+  - name: Microsoft
+    type: select
+    proxies:
+      - DIRECT
+      - Proxy
+      - Auto
+
+  - name: AI_Services
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Proxy
+    filter: '(?i)美国|美國|US|United States'
+
+  - name: Netflix
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Proxy
+      - DIRECT
+
+  - name: YouTube
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Proxy
+      - DIRECT
+
+#==========规则提供商==========
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
+    path: ./ruleset/apple.yaml
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt"
+    path: ./ruleset/google.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  private:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
+    path: ./ruleset/private.yaml
+    interval: 86400
+
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+
+  greatfire:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt"
+    path: ./ruleset/greatfire.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+  globalmedia:
+    type: http
+    behavior: classical
+    url: "https://cdn.jsdelivr.net/gh/DivineEngine/Profiles@master/Clash/RuleSet/StreamingMedia/Streaming.yaml"
+    path: ./ruleset/globalmedia.yaml
+    interval: 86400
+
+  microsoft:
+    type: http
+    behavior: classical
+    url: "https://cdn.jsdelivr.net/gh/DivineEngine/Profiles@master/Clash/RuleSet/Extra/Microsoft/Microsoft.yaml"
+    path: ./ruleset/microsoft.yaml
+    interval: 86400
+
+#==========规则==========
+rules:
+  # Claude 专用规则
+  - DOMAIN-SUFFIX,anthropic.com,Claude
+  - DOMAIN-SUFFIX,claude.ai,Claude
+  - DOMAIN-KEYWORD,claude,Claude
+
+  - DOMAIN-SUFFIX,openai.com,AI_Services
+  - DOMAIN-SUFFIX,ai.com,AI_Services
+  - DOMAIN-SUFFIX,anthropic.com,AI_Services
+  - DOMAIN-SUFFIX,claude.ai,AI_Services
+  - DOMAIN-SUFFIX,perplexity.ai,AI_Services
+  - DOMAIN-KEYWORD,openai,AI_Services
+  - DOMAIN-KEYWORD,anthropic,AI_Services
+  - DOMAIN-KEYWORD,claude,AI_Services
+  - DOMAIN-KEYWORD,chatgpt,AI_Services
+  - DOMAIN-SUFFIX,webrtc.org,REJECT
+  - DOMAIN-SUFFIX,rtc.org,REJECT
+  - DOMAIN-SUFFIX,peerconnection.org,REJECT
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  - RULE-SET,icloud,DIRECT
+  - RULE-SET,apple,Apple
+  - RULE-SET,google,Proxy
+  - RULE-SET,proxy,Proxy
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,lancidr,DIRECT
+  - RULE-SET,cncidr,DIRECT
+  - RULE-SET,telegramcidr,Telegram
+  - RULE-SET,gfw,Proxy
+  - RULE-SET,greatfire,Proxy
+  - RULE-SET,globalmedia,GlobalMedia
+  - RULE-SET,microsoft,Microsoft
+  - DOMAIN-KEYWORD,netflix,Netflix
+  - DOMAIN-SUFFIX,netflix.com,Netflix
+  - DOMAIN-SUFFIX,netflix.net,Netflix
+  - DOMAIN-KEYWORD,youtube,YouTube
+  - DOMAIN-SUFFIX,youtube.com,YouTube
+  - DOMAIN-SUFFIX,googlevideo.com,YouTube
+  - DOMAIN-SUFFIX,example.com,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,Proxy
+
+#==========高级功能==========
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+  auto-route: true
+  auto-detect-interface: true
+  mtu: 9000
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  sniffing:
+    - tls
+    - http
+  force-domain:
+    - '+.google.com'
+    - '+.facebook.com'
+    - '+.youtube.com'
+  skip-domain:
+    - 'Mijia Cloud'
+    - '+.apple.com'
+  port-whitelist:
+    - 80
+    - 443
+
+#==========性能优化==========
+tcp-concurrent: true
+udp: true
+quic: true
+mptcp: true
+
+experimental:
+  interface-name: eth0
+  routing-mark: 6666
+  network-config:
+    tcp:
+      congestion-algorithm: bbr
+  ebpf:
+    auto-redir: true
+    redirect-to-tun:
+      - eth0
+  udpv6: true
+
+#==========定时任务==========
+cron:
+  - '0 8 * * * clash-switch-config-work'
+  - '0 18 * * * clash-switch-config-home'
+
+#==========多配置文件支持==========
+config-reload: true
+configs:
+  - config1.yaml
+  - config2.yaml
+
+#==========TLS 指纹==========
+tls:
+  fingerprint: chrome
+
+#==========脚本支持==========
+script:
+  code: |
+    import time
+    import re
+    import random
+    from datetime import datetime
+    import requests
+    import geoip2.database
+
+    # 更新后的代理列表，包含更多中国电信友好的节点
+    PROXIES = {
+        'CN': ['CN1', 'CN2', 'CN3', 'CN4', 'CN5'],  # 中国大陆节点
+        'HK': ['HK1', 'HK2', 'HK3', 'HK4'],  # 香港节点
+        'SG': ['SG1', 'SG2', 'SG3'],  # 新加坡节点
+        'JP': ['JP1', 'JP2', 'JP3'],  # 日本节点
+        'US': ['US1', 'US2', 'US3', 'US4'],  # 美国节点
+        'KR': ['KR1', 'KR2']  # 韩国节点
+    }
+
+    # 代理速度缓存
+    proxy_speeds = {}
+
+    # 电信友好域名列表（扩展）
+    TELECOM_FRIENDLY_DOMAINS = [
+        'chinaz.com', 'chinaz.net', 'cnzz.com', 'taobao.com', 'alipay.com', 
+        'tmall.com', 'jd.com', 'baidu.com', 'qq.com', 'weibo.com',
+        '163.com', 'sina.com.cn', 'sohu.com', 'ctrip.com', 'iqiyi.com',
+        'bilibili.com', 'youku.com', 'zhihu.com', 'douyin.com', 'toutiao.com'
+    ]
+
+    # 初始化 GeoIP 数据库
+    geoip_reader = geoip2.database.Reader('/path/to/GeoLite2-Country.mmdb')
+
+    def get_location(ip):
+        try:
+            response = geoip_reader.country(ip)
+            return response.country.iso_code
+        except:
+            # 如果查询失败，默认返回 CN
+            return 'CN'
+
+    def test_proxy_speed(proxy):
+        try:
+            start_time = time.time()
+            response = requests.get('http://www.gstatic.com/generate_204', proxies={'http': proxy, 'https': proxy}, timeout=5)
+            end_time = time.time()
+            if response.status_code == 204:
+                return (end_time - start_time) * 1000  # 返回延迟（毫秒）
+            else:
+                return float('inf')
+        except:
+            return float('inf')
+
+    def get_fastest_proxy(location):
+        proxies = PROXIES.get(location, PROXIES['CN'])
+        fastest_proxy = min(proxies, key=lambda p: proxy_speeds.get(p, float('inf')))
+        return fastest_proxy
+
+    def update_proxy_speeds():
+        for proxies in PROXIES.values():
+            for proxy in proxies:
+                proxy_speeds[proxy] = test_proxy_speed(proxy)
+
+    def is_peak_hours():
+        current_hour = datetime.now().hour
+        return 20 <= current_hour or current_hour < 1  # 高峰时间：晚上8点到凌晨1点
+
+    def main(ctx, metadata):
+        # 每10分钟更新一次代理速度
+        if int(time.time()) % 600 == 0:
+            update_proxy_speeds()
+
+        domain = metadata['host']
+        ip = metadata['dst_ip']
+        port = metadata['dst_port']
+
+        # 针对电信友好域名的优化
+        if any(domain.endswith(d) for d in TELECOM_FRIENDLY_DOMAINS):
+            return 'DIRECT'
+
+        # 基于地理位置的路由
+        location = get_location(ip)
+
+        # 特定域名的路由规则
+        if re.match(r'.*\.(netflix|youtube|google)\.com$', domain):
+            return get_fastest_proxy('US')
+        elif re.match(r'.*\.(baidu|taobao|jd)\.com$', domain):
+            return 'DIRECT'
+
+        # 基于端口的路由（例如，为 HTTPS 流量使用更安全的代理）
+        if port == '443':
+            return get_fastest_proxy(location)
+
+        # 负载均衡和动态速度测试
+        if location == 'CN':
+            if is_peak_hours():
+                # 在高峰时段，选择最快的国际代理
+                return min(proxy_speeds, key=proxy_speeds.get)
+            else:
+                # 非高峰时段，直接连接
+                return 'DIRECT'
+        else:
+            # 对于国际流量，始终选择最快的代理
+            return get_fastest_proxy(location)
+
+        # 默认路由
+        return 'DIRECT'
+
+    # 性能优化函数
+    def optimize_for_telecom_gigabit(ctx):
+        # 设置更大的缓冲区大小
+        ctx.set_option('socket-buffer-size', 32 * 1024 * 1024)  # 32MB buffer
+        
+        # 启用 TCP BBR 拥塞控制算法
+        ctx.set_option('tcp-congestion-controller', 'bbr')
+        
+        # 增加并发连接数
+        ctx.set_option('max-concurrent-streams', 2000)
+        
+        # 启用 TFO (TCP Fast Open)
+        ctx.set_option('tcp-fast-open', True)
+        
+        # 优化 DNS 设置
+        ctx.set_option('dns-prefetch', True)
+        ctx.set_option('dns-cache-size', 20000)
+        
+        # 启用 MPTCP (Multipath TCP) 如果可用
+        ctx.set_option('mptcp', True)
+        
+        # 设置较大的 MTU
+        ctx.set_option('mtu', 1500)
+        
+        # 启用 HTTP/3 和 QUIC
+        ctx.set_option('enable-http3', True)
+        
+        # 优化 TLS 设置
+        ctx.set_option('tls-session-caching', True)
+        ctx.set_option('tls-session-timeout', 3600)
+
+    # 在脚本初始化时调用优化函数
+    optimize_for_telecom_gigabit(ctx)
+
+#==========预解析域名==========
+hosts:
+  'mtalk.google.com': 108.177.125.188
+  'dl.google.com': 180.163.151.161
+  'dl.l.google.com': 180.163.151.161
+
+#==========认证==========
+authentication:
+  - "user1:pass1"
+  - "user2:pass2"
+
+#==========多路径 TCP==========
+mptcp:
+  enabled: true
+  scheduler: redundant
+
+#==========自定义出站接口==========
+interface-name: eth0
+
+#==========TTL 伪装==========
+fake-ip-range: 198.18.0.1/16
+fake-ip-filter:
+  - '*.lan'
+  - 'localhost.ptlogin2.qq.com'
+
+#==========API 支持==========
+external-controller: 0.0.0.0:9090
+external-ui: dashboard
+secret: ${CLASH_DASHBOARD_SECRET}
+
+#==========延迟测试==========
+url-test:
+  url: http://www.gstatic.com/generate_204
+  interval: 300
+
+#==========代理缓存==========
+profile:
+  store-selected: true
+
+#==========流量统计==========
+profile:
+  tracing: true
+
+#==========节点健康检查==========
+health-check:
+  enable: true
+  interval: 600
+  url: http://www.gstatic.com/generate_204
+
+#==========长连接优化==========
+keep-alive-interval: 30
+
+#==========更多安全措施==========
+tls:
+  certificate: ${TLS_CERTIFICATE_PATH}
+  sni: ${CUSTOM_SNI}
+  alpn: 
+    - h2
+    - http/1.1
+
+#==========自定义出站IP==========
+routing-mark: 66
+
+#==========更多性能优化==========
+tunnel:
+  tcp-keep-alive: 30
+  tcp-no-delay: true
+
+#==========日志设置==========
+log-level: info
+log-file: ./clash.log
+
+#==========实验性功能==========
+experimental:
+  ignore-resolve-fail: true
+  sniff-tls-sni: true
+  tracing: true
+
+# Claude 连接说明：
+# 1. 当 Claude 无法正常使用时，请在 Clash 控制面板中找到 "Claude" 代理组。
+# 2. 在 "Claude" 组中，您会看到机场提供的所有可用节点列表。
+# 3. 手动选择一个节点进行尝试。
+# 4. 如果选择的节点无法连接 Claude，请尝试其他节点。
+# 5. 持续尝试不同节点，直到找到可以正常使用 Claude 的连接。
+# 6. 如果所有节点都无法连接，请检查 Claude 服务状态或稍后再试。
+
+# 新增: 更多使用说明
+# 7. 如果遇到特定网站访问问题，可以尝试切换到 "Proxy" 组并选择不同的代理方式。
+# 8. 对于流媒体服务，可以使用新增的 "Netflix" 和 "YouTube" 代理组进行更精细的控制。
+# 9. 定期检查并更新您的 Clash 配置文件，以获得最佳性能和安全性。
+# 10. 如果遇到连接问题，可以尝试切换 DNS 设置或使用 fallback DNS。
+
+# 新增: 中国电信千兆宽带优化说明
+# 11. 本配置已针对中国电信千兆宽带进行了优化，包括更大的缓冲区、更多的并发连接等。
+# 12. 如果您使用的不是中国电信千兆宽带，可能需要调整一些参数以适应您的网络环境。
+# 13. 脚本中的代理选择逻辑会自动选择最快的代理，有助于充分利用高速宽带。
+# 14. 在非高峰时段，对于国内网站会优先使用直接连接，以充分利用您的千兆带宽。
+# 15. 如果您发现某些设置影响了您的网络体验，请酌情调整或禁用相关功能。
