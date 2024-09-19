@@ -1,0 +1,459 @@
+port: 7890
+socks-port: 7891
+redir-port: 7892
+mixed-port: 7893
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: info
+ipv6: true
+external-controller: :9090
+external-ui: dashboard
+secret: "your_password_here"
+
+#==========DNS 设置==========
+
+dns:
+  enable: true
+  ipv6: true
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip  # 调整为 fake-ip 模式
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - 'localhost.ptlogin2.qq.com'
+    - '*.local'        # 防止本地域名泄露
+    - '*.crashlytics.com'  # 防止 DNS 泄露
+  use-hosts: true
+  nameserver:
+    - 127.0.0.1:5635   # AdGuard Home
+    - 223.5.5.5
+    - 119.29.29.29
+  fallback:
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+    - 114.114.114.114
+    - 223.5.5.5
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+  default-nameserver:
+    - 127.0.0.1:5635   # AdGuard Home
+  nameserver-policy:
+    'www.google.com': [1.1.1.1, 8.8.8.8]
+    '+.github.com': [1.1.1.1, 8.8.8.8]
+  cache: true
+  cache-size: 4096
+
+#==========代理提供商==========
+
+proxy-providers:
+  tudou:
+    type: http
+    url: "https://tudou-dyapi.tudouyun.top/api/v1/client/subscribe?token=f0d5eda7efd87a99e2e94f8790276706"
+    interval: 3600
+    path: ./proxies/tudou.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+#==========代理组==========
+
+proxy-groups:
+  - name: Claude
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Fallback
+      - LoadBalance
+      - DIRECT
+
+  - name: Auto
+    type: url-test
+    use:
+      - tudou
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: Fallback
+    type: fallback
+    use:
+      - tudou
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: LoadBalance
+    type: load-balance
+    use:
+      - tudou
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: consistent-hashing
+
+  - name: Proxy
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Fallback
+      - LoadBalance
+      - DIRECT
+
+  - name: US_Nodes
+    type: select
+    use:
+      - tudou
+    filter: '(?i)美国|美國|US|United States'
+    proxies:
+      - Auto
+      - Proxy
+
+  - name: Streaming
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Proxy
+
+  - name: Gaming
+    type: url-test
+    use:
+      - tudou
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: GlobalMedia
+    type: select
+    proxies:
+      - Proxy
+      - Auto
+      - DIRECT
+
+  - name: Telegram
+    type: select
+    proxies:
+      - Proxy
+      - Auto
+      - DIRECT
+
+  - name: Apple
+    type: select
+    use:
+      - tudou
+    filter: '(?i)美国|美國|US|United States'
+    proxies:
+      - Auto
+      - US_Nodes
+      - Proxy
+      - DIRECT
+
+  - name: Microsoft
+    type: select
+    use:
+      - tudou
+    filter: '(?i)美国|美國|US|United States'
+    proxies:
+      - Auto
+      - US_Nodes
+      - Proxy
+      - DIRECT
+
+  - name: AI_Services
+    type: select
+    use:
+      - tudou
+    filter: '(?i)美国|美國|US|United States'
+    proxies:
+      - Auto
+      - US_Nodes
+      - Proxy
+      - DIRECT
+
+  - name: Netflix
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Proxy
+      - DIRECT
+
+  - name: YouTube
+    type: select
+    use:
+      - tudou
+    proxies:
+      - Auto
+      - Proxy
+      - DIRECT
+
+#==========规则提供商==========
+
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
+    path: ./ruleset/apple.yaml
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt"
+    path: ./ruleset/google.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  private:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
+    path: ./ruleset/private.yaml
+    interval: 86400
+
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+
+  greatfire:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt"
+    path: ./ruleset/greatfire.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+  globalmedia:
+    type: http
+    behavior: classical
+    url: "https://cdn.jsdelivr.net/gh/DivineEngine/Profiles@master/Clash/RuleSet/StreamingMedia/Streaming.yaml"
+    path: ./ruleset/globalmedia.yaml
+    interval: 86400
+
+  microsoft:
+    type: http
+    behavior: classical
+    url: "https://cdn.jsdelivr.net/gh/DivineEngine/Profiles@master/Clash/RuleSet/Extra/Microsoft/Microsoft.yaml"
+    path: ./ruleset/microsoft.yaml
+    interval: 86400
+
+#==========规则==========
+
+rules:
+  # Claude 专用规则
+  - DOMAIN-SUFFIX,anthropic.com,Claude
+  - DOMAIN-SUFFIX,claude.ai,Claude
+  - DOMAIN-KEYWORD,claude,Claude
+
+  - DOMAIN-SUFFIX,openai.com,AI_Services
+  - DOMAIN-SUFFIX,ai.com,AI_Services
+  - DOMAIN-SUFFIX,perplexity.ai,AI_Services
+  - DOMAIN-KEYWORD,openai,AI_Services
+  - DOMAIN-KEYWORD,chatgpt,AI_Services
+
+  - DOMAIN-SUFFIX,webrtc.org,REJECT        # 阻止 WebRTC 相关流量
+  - DOMAIN-SUFFIX,rtc.org,REJECT           # 阻止 RTC 相关流量
+  - DOMAIN-SUFFIX,peerconnection.org,REJECT  # 阻止 P2P 连接流量
+
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  - RULE-SET,icloud,Apple
+  - RULE-SET,apple,Apple
+  - RULE-SET,google,Proxy
+  - RULE-SET,proxy,Proxy
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,lancidr,DIRECT
+  - RULE-SET,cncidr,DIRECT
+  - RULE-SET,telegramcidr,Telegram
+  - RULE-SET,gfw,Proxy
+  - RULE-SET,greatfire,Proxy
+  - RULE-SET,globalmedia,GlobalMedia
+  - RULE-SET,microsoft,Microsoft
+
+  # Netflix 和 YouTube 的规则
+  - DOMAIN-KEYWORD,netflix,Netflix
+  - DOMAIN-SUFFIX,netflix.com,Netflix
+  - DOMAIN-SUFFIX,netflix.net,Netflix
+  - DOMAIN-KEYWORD,youtube,YouTube
+  - DOMAIN-SUFFIX,youtube.com,YouTube
+  - DOMAIN-SUFFIX,googlevideo.com,YouTube
+
+  # 自定义规则示例
+  - DOMAIN-SUFFIX,example.com,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,Proxy
+
+#==========性能优化==========
+
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+  auto-route: true
+  auto-detect-interface: true
+  mtu: 1480  # 针对中国电信千兆光纤和 PPPoE 调整 MTU
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  sniffing:
+    - tls
+    - http
+  force-domain:
+    - '+.google.com'
+    - '+.facebook.com'
+    - '+.youtube.com'
+  skip-domain:
+    - 'Mijia Cloud'
+    - '+.apple.com'
+  port-whitelist:
+    - 80
+    - 443
+
+experimental:
+  interface-name: pppoe-wan  # OpenWrt PPPoE 拨号的接口名，需根据实际情况调整
+  routing-mark: 6666
+
+#==========性能优化选项==========
+
+tcp-concurrent: true
+tcp-fast-open: true
+udp: true
+quic: true
+# mptcp: true   # OpenWrt 默认不支持 MPTCP，如需启用请确保内核支持
+
+# 长连接优化
+keep-alive-interval: 30
+tcp-no-delay: true
+
+#==========预解析域名==========
+
+hosts:
+  'mtalk.google.com': 108.177.125.188
+  'dl.google.com': 180.163.151.161
+  'dl.l.google.com': 180.163.151.161
+
+#==========认证==========
+
+authentication:
+  - "user1:pass1"
+  - "user2:pass2"
+
+#==========自定义出站接口==========
+
+interface-name: pppoe-wan  # OpenWrt PPPoE 拨号的接口名，需根据实际情况调整
+
+#==========IPV6==========
+
+ipv6: true
+
+#==========UDP 支持==========
+
+udp: true
+
+#==========API 支持==========
+
+external-controller: 0.0.0.0:9090
+external-ui: dashboard
+secret: "your_dashboard_password_here"
+
+#==========延迟测试==========
+
+url-test:
+  url: http://www.gstatic.com/generate_204
+  interval: 300
+
+#==========代理缓存==========
+
+profile:
+  store-selected: true
+
+#==========节点健康检查==========
+
+health-check:
+  enable: true
+  interval: 600
+  url: http://www.gstatic.com/generate_204
+
+#==========TCP 并发==========
+
+tcp-concurrent: true
+
+#==========长连接优化==========
+
+tunnel:
+  tcp-keep-alive: 30
+  tcp-no-delay: true
+
+#==========定时任务==========
+
+cron:
+  - '0 8 * * * clash-switch-config-work'
+  - '0 18 * * * clash-switch-config-home'
