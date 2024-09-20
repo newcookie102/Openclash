@@ -1,0 +1,629 @@
+# OpenClash 优化配置文件 - 针对中国电信千兆光纤和旁路由优化
+
+#==========基本设置==========
+mixed-port: 7890
+allow-lan: true
+bind-address: '*'
+mode: rule
+log-level: info
+ipv6: true
+external-controller: :9090
+external-ui: dashboard
+secret: "${SECRET}"  # 使用环境变量存储密码
+
+#==========DNS 设置==========
+dns:
+  enable: true
+  ipv6: true
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - 'localhost.ptlogin2.qq.com'
+    - '*.local'
+    - '*.crashlytics.com'
+  use-hosts: true
+  nameserver:
+    - 202.96.134.133  # 中国电信 DNS
+    - 202.96.128.166  # 中国电信 DNS
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  fallback:
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+  default-nameserver:
+    - 119.29.29.29
+    - 223.5.5.5
+  nameserver-policy:
+    'www.google.com': [8.8.8.8, 8.8.4.4]
+    '+.cn': [202.96.134.133, 202.96.128.166]  # 国内域名优先使用电信 DNS
+  cache: true
+  cache-size: 8192  # 增大缓存大小，提高解析速度
+
+#==========代理提供商==========
+proxy-providers:
+  airport1:
+    type: http
+    url: "http://your-subscription-link-1"
+    interval: 3600
+    path: ./proxies/airport1.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+  airport2:
+    type: http
+    url: "http://your-subscription-link-2"
+    interval: 3600
+    path: ./proxies/airport2.yaml
+    health-check:
+      enable: true
+      interval: 600
+      url: http://www.gstatic.com/generate_204
+
+#==========代理组==========
+proxy-groups:
+  - name: FINAL
+    type: select
+    proxies:
+      - Auto
+      - DIRECT
+
+  - name: Auto
+    type: url-test
+    use:
+      - airport1
+      - airport2
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+
+  - name: Fallback
+    type: fallback
+    use:
+      - airport1
+      - airport2
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: Balance
+    type: load-balance
+    use:
+      - airport1
+      - airport2
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+    strategy: consistent-hashing
+
+  - name: Streaming
+    type: select
+    use:
+      - airport1
+      - airport2
+    proxies:
+      - Auto
+      - Balance
+      - DIRECT
+
+  - name: AI_Services
+    type: select
+    use:
+      - airport1
+      - airport2
+    proxies:
+      - Auto
+      - Balance
+    filter: '(?i)美国|美國|US|United States'
+
+  - name: Telegram
+    type: select
+    proxies:
+      - Auto
+      - Balance
+      - DIRECT
+
+  - name: Apple
+    type: select
+    proxies:
+      - DIRECT
+      - Auto
+      - Balance
+
+  - name: Microsoft
+    type: select
+    proxies:
+      - DIRECT
+      - Auto
+      - Balance
+
+  - name: Game
+    type: select
+    use:
+      - airport1
+      - airport2
+    proxies:
+      - Balance
+      - DIRECT
+
+  - name: ChinaTelecom
+    type: select
+    proxies:
+      - DIRECT
+      - Auto
+    use:
+      - airport1
+      - airport2
+    filter: '(?i)中国|上海|北京|广州|深圳|杭州|CN|China'
+
+#==========规则提供商==========
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
+    path: ./ruleset/apple.yaml
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt"
+    path: ./ruleset/google.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  private:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
+    path: ./ruleset/private.yaml
+    interval: 86400
+
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+
+  greatfire:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt"
+    path: ./ruleset/greatfire.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+#==========规则==========
+rules:
+  # 中国电信优化规则
+  - DOMAIN-SUFFIX,189.cn,ChinaTelecom
+  - DOMAIN-SUFFIX,21cn.com,ChinaTelecom
+  - DOMAIN-SUFFIX,chinatel.com,ChinaTelecom
+  - IP-CIDR,36.0.0.0/4,ChinaTelecom
+
+  # AI Services
+  - DOMAIN-SUFFIX,anthropic.com,AI_Services
+  - DOMAIN-SUFFIX,claude.ai,AI_Services
+  - DOMAIN-KEYWORD,claude,AI_Services
+  - DOMAIN-SUFFIX,openai.com,AI_Services
+  - DOMAIN-SUFFIX,ai.com,AI_Services
+  - DOMAIN-KEYWORD,openai,AI_Services
+  - DOMAIN-KEYWORD,chatgpt,AI_Services
+
+  # 防止DNS泄露
+  - DOMAIN-SUFFIX,dnsleaktest.com,Fallback
+  - DOMAIN-SUFFIX,dnsleak.com,Fallback
+  - DOMAIN-SUFFIX,expressvpn.com,Fallback
+  - DOMAIN-SUFFIX,nordvpn.com,Fallback
+  - DOMAIN-SUFFIX,surfshark.com,Fallback
+  - DOMAIN-SUFFIX,ipleak.net,Fallback
+  - DOMAIN-SUFFIX,perfect-privacy.com,Fallback
+  - DOMAIN-SUFFIX,browserleaks.com,Fallback
+  - DOMAIN-SUFFIX,browserleaks.org,Fallback
+  - DOMAIN-SUFFIX,vpnunlimited.com,Fallback
+  - DOMAIN-KEYWORD,torrent,DIRECT
+
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  - RULE-SET,icloud,DIRECT
+  - RULE-SET,apple,Apple
+  - RULE-SET,google,Auto
+  - RULE-SET,proxy,Auto
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,lancidr,DIRECT
+  - RULE-SET,cncidr,ChinaTelecom
+  - RULE-SET,telegramcidr,Telegram
+  - RULE-SET,gfw,Auto
+  - RULE-SET,greatfire,Auto
+
+  # 流媒体
+  - DOMAIN-KEYWORD,netflix,Streaming
+  - DOMAIN-SUFFIX,netflix.com,Streaming
+  - DOMAIN-SUFFIX,netflix.net,Streaming
+  - DOMAIN-KEYWORD,youtube,Streaming
+  - DOMAIN-SUFFIX,youtube.com,Streaming
+  - DOMAIN-SUFFIX,googlevideo.com,Streaming
+
+  # 游戏规则
+  - DOMAIN-SUFFIX,steam-chat.com,Game
+  - DOMAIN-SUFFIX,steamcontent.com,Game
+  - DOMAIN-SUFFIX,steamgames.com,Game
+  - DOMAIN-SUFFIX,steampowered.com,Game
+  - DOMAIN-SUFFIX,steamstat.us,Game
+  - DOMAIN-SUFFIX,steamstatic.com,Game
+  - DOMAIN-SUFFIX,steamusercontent.com,Game
+
+  # 自定义规则
+  - DOMAIN-SUFFIX,example.com,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - GEOIP,CN,ChinaTelecom
+  - MATCH,FINAL
+
+#==========高级功能==========
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+  auto-route: true
+  auto-detect-interface: true
+  mtu: 9000  # 针对千兆网络优化
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  sniffing:
+    - tls
+    - http
+  force-domain:
+    - '+.google.com'
+    - '+.facebook.com'
+    - '+.youtube.com'
+  skip-domain:
+    - 'Mijia Cloud'
+    - '+.apple.com'
+  port-whitelist:
+    - 80
+    - 443
+
+experimental:
+  interface-name: eth0
+
+tcp-concurrent: true
+
+#==========OpenClash 特定功能==========
+# 自定义DNS
+custom-dns:
+  enable: true
+  default:
+    - 202.96.134.133
+    - 202.96.128.166
+  fakeip-domain:
+    - '+.google.com'
+    - '+.facebook.com'
+    - '+.youtube.com'
+
+# 网络性能优化
+optimization:
+  enable: true
+  scan-period: 3600
+  delay-time: 300
+
+# 代理延迟测试
+proxy-delay-test:
+  enable: true
+  url: "http://www.gstatic.com/generate_204"
+  interval: 300
+
+# 定时更新订阅
+cron:
+  enable: true
+  expression: "0 */6 * * *"
+  commands:
+    - "proxy-providers reload"
+
+# 自动选择最佳节点
+auto-select:
+  enable: true
+  interval: 300
+  proxy-group:
+    - Auto
+    - Balance
+    - ChinaTelecom
+
+# 高级路由
+routing:
+  enable: true
+  rules:
+    - 'IP-CIDR,10.0.0.0/8,DIRECT'
+    - 'IP-CIDR,172.16.0.0/12,DIRECT'
+    - 'IP-CIDR,192.168.0.0/16,DIRECT'
+
+# 流量统计
+traffic-statistics:
+  enable: true
+  interval: 60
+
+# 代理限速 (针对千兆网络，设置较高限制)
+proxy-speed-limit:
+  enable: true
+  limit: 900  # 900 Mbps，预留一些带宽给其他设备
+
+# TLS 1.3
+tls13:
+  enable: true
+
+# IPv6支持
+ipv6:
+  enable: true
+
+# 多实例支持
+multi-instance:
+  enable: true
+  max-instances: 3
+
+# 自动重启
+auto-restart:
+  enable: true
+  time: "04:00"
+
+# 日志记录
+log:
+  enable: true
+  level: info
+  path: "/var/log/openclash.log"
+  max-size: 100
+  max-backups: 3
+
+# 安全设置
+security:
+  lan-access: "password"
+  lan-password: "${LAN_PASSWORD}"  # 使用环境变量
+  web-password-protection: true
+  web-password: "${WEB_PASSWORD}"  # 使用环境变量
+
+# 高级性能调优（续）
+performance:
+  tcp-fast-open: true
+  tcp-no-delay: true
+  tcp-congestion-algorithm: bbr  # 使用 BBR 拥塞控制算法
+
+# QUIC支持
+quic:
+  enable: true
+
+# MPTCP支持
+mptcp:
+  enable: true
+
+# 自定义脚本
+scripts:
+  pre-start: "/path/to/pre-start-script.sh"
+  post-start: "/path/to/post-start-script.sh"
+  pre-stop: "/path/to/pre-stop-script.sh"
+  post-stop: "/path/to/post-stop-script.sh"
+
+# 旁路由优化
+bypass-route:
+  enable: true
+  interface: "eth0"  # 假设旁路由的LAN接口是eth0
+  gateway: "192.168.1.1"  # 主路由的IP地址
+  metric: 10
+
+# 静态路由
+static-routes:
+  - ip: "223.5.5.5"  # 阿里DNS
+    gateway: "192.168.1.1"
+  - ip: "119.29.29.29"  # 腾讯DNS
+    gateway: "192.168.1.1"
+
+# QoS设置
+qos:
+  enable: true
+  upload: 900000  # 900 Mbps上传
+  download: 900000  # 900 Mbps下载
+  priority:
+    - name: "游戏流量"
+      ports: [3074, 3075, 27015-27030]
+      priority: high
+    - name: "视频流量"
+      domains: ["netflix.com", "youtube.com"]
+      priority: medium
+    - name: "下载流量"
+      ports: [6881-6889, 51413]
+      priority: low
+
+# 中国电信 IPv6 优化
+ipv6-optimization:
+  enable: true
+  nat64-prefix: "64:ff9b::/96"
+  dns64-server: "2400:3200::1"
+
+# 网络诊断工具
+network-diagnosis:
+  enable: true
+  tools:
+    - ping
+    - traceroute
+    - nslookup
+    - speedtest
+
+# 智能分流
+smart-routing:
+  enable: true
+  rules:
+    - domain: "*.taobao.com"
+      target: DIRECT
+    - domain: "*.jd.com"
+      target: DIRECT
+    - domain: "*.qq.com"
+      target: DIRECT
+    - domain: "*.baidu.com"
+      target: DIRECT
+
+# 应用层协议优化
+protocol-optimization:
+  http:
+    max-persistent-connections-per-server: 10
+  http2:
+    enable: true
+    max-concurrent-streams: 250
+  websocket:
+    enable: true
+    compression: true
+
+# 节点健康检查
+node-healthcheck:
+  enable: true
+  interval: 300
+  timeout: 5
+  retry: 3
+  idle-timeout: 60
+
+# 高级DNS配置
+advanced-dns:
+  enable: true
+  edns-client-subnet: 
+    enable: true
+    custom-ip: "220.181.111.111"  # 北京电信IP，用于优化CDN
+  split-horizon-dns:
+    enable: true
+    local-domains:
+      - "example.local"
+      - "internal.company.com"
+
+# 流量混淆
+traffic-obfuscation:
+  enable: true
+  methods:
+    - http
+    - tls
+  hosts:
+    - "www.bing.com"
+    - "www.microsoft.com"
+
+# 自动故障转移
+auto-fallback:
+  enable: true
+  latency-threshold: 200  # 毫秒
+  fallback-groups:
+    - Auto
+    - Fallback
+
+# 节能模式
+power-saving:
+  enable: true
+  idle-timeout: 1800  # 30分钟无活动后进入节能模式
+
+# 高级缓存
+advanced-caching:
+  enable: true
+  dns-cache:
+    size: 10000
+    ttl: 3600
+  route-cache:
+    size: 100000
+    ttl: 300
+
+# 自定义防火墙规则
+firewall-rules:
+  - action: allow
+    src: "192.168.1.0/24"
+    dst: "any"
+  - action: deny
+    src: "any"
+    dst: "10.0.0.0/8"
+
+# 节点自动切换
+node-auto-switch:
+  enable: true
+  check-interval: 60
+  latency-threshold: 200
+  packet-loss-threshold: 5
+
+# 高级日志
+advanced-logging:
+  enable: true
+  log-level: debug
+  log-format: json
+  log-max-size: 100  # MB
+  log-max-backups: 5
+  log-compress: true
+
+# 性能监控
+performance-monitor:
+  enable: true
+  interval: 60
+  metrics:
+    - cpu
+    - memory
+    - network
+    - connections
+
+# 配置文件版本控制
+config-version-control:
+  enable: true
+  backup-count: 5
+  auto-rollback: true
+
+# 结束配置文件
