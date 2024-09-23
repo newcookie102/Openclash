@@ -1,0 +1,303 @@
+# 基本设置
+mixed-port: 7890
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: false
+
+# 安全设置
+authentication:
+  - "admin:password"
+
+# DNS 设置
+dns:
+  enable: true
+  ipv6: false
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - 'localhost.ptlogin2.qq.com'
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+    - tls://dns.google:853
+  fallback:
+    - tls://1.1.1.1:853
+    - https://cloudflare-dns.com/dns-query
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+
+# TUN 设置
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - 198.18.0.2:53
+  auto-route: true
+  auto-detect-interface: true
+  mtu: 1500  # 调整为1500，适配一般网络环境
+
+# 中国电信千兆宽带优化
+tcp-concurrent: true
+tcp-fast-open: true
+tcp-no-delay: true
+interface-name: eth0  # 请根据实际网卡名称调整
+
+# 代理提供者
+proxy-providers:
+  my_proxy_provider:
+    type: http
+    url: "https://even.axxi.site/api/v1/client/subscribe?token=f0d5eda7efd87a99e2e94f8790276706"
+    interval: 3600
+    path: ./my_proxy_provider.yaml
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+
+# 代理组
+proxy-groups:
+  - name: "Auto"
+    type: url-test
+    use:
+      - my_proxy_provider
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: "Fallback"
+    type: fallback
+    use:
+      - my_proxy_provider
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: "Load-Balance"
+    type: load-balance
+    use:
+      - my_proxy_provider
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: "PROXY"
+    type: select
+    proxies:
+      - Auto
+      - Fallback
+      - Load-Balance
+    use:
+      - my_proxy_provider
+
+  - name: "Streaming"
+    type: select
+    proxies:
+      - PROXY
+      - Auto
+      - Fallback
+    use:
+      - my_proxy_provider
+
+  - name: "Game"
+    type: select
+    proxies:
+      - DIRECT
+      - Auto
+      - Fallback
+
+  - name: "Apple"
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: "Microsoft"
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: "Final"
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+
+# 规则提供者
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/BanAD.yaml"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  privacy:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/BanProgramAD.yaml"
+    path: ./ruleset/privacy.yaml
+    interval: 86400
+
+  streaming:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/ProxyMedia.yaml"
+    path: ./ruleset/streaming.yaml
+    interval: 86400
+
+  global:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/ProxyGFWlist.yaml"
+    path: ./ruleset/global.yaml
+    interval: 86400
+
+  china:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/ChinaDomain.yaml"
+    path: ./ruleset/china.yaml
+    interval: 86400
+
+  china_ip:
+    type: http
+    behavior: ipcidr
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/ChinaIp.yaml"
+    path: ./ruleset/china_ip.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/LocalAreaNetwork.yaml"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/Telegram.yaml"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+  # 新增的规则集
+  direct:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/newcookie102/Openclash/main/Direct.list"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/newcookie102/Openclash/main/ProxyLite.list"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  ai:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/newcookie102/Openclash/main/AI.list"
+    path: ./ruleset/ai.yaml
+    interval: 86400
+
+# 规则设置
+rules:
+  # 本地网络直连
+  - RULE-SET,lancidr,DIRECT
+
+  # 广告和隐私跟踪拦截
+  - RULE-SET,reject,REJECT
+  - RULE-SET,privacy,REJECT
+
+  # 海外流媒体服务
+  - RULE-SET,streaming,Streaming
+
+  # Telegram
+  - RULE-SET,telegramcidr,PROXY
+
+  # 国内域名和 IP 直连
+  - RULE-SET,china,DIRECT
+  - RULE-SET,china_ip,DIRECT
+
+  # 动态新增的规则集
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,proxy,PROXY
+  - RULE-SET,ai,PROXY
+
+  # 常见国内网站和 APP 直连
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-KEYWORD,baidu,DIRECT
+  - DOMAIN-KEYWORD,alicdn,DIRECT
+  - DOMAIN-KEYWORD,alipay,DIRECT
+  - DOMAIN-KEYWORD,taobao,DIRECT
+  - DOMAIN-KEYWORD,jd,DIRECT
+  - DOMAIN-KEYWORD,qq,DIRECT
+  - DOMAIN-KEYWORD,tencent,DIRECT
+  - DOMAIN-KEYWORD,weixin,DIRECT
+  - DOMAIN-KEYWORD,bilibili,DIRECT
+
+  # 常见国外网站代理
+  - DOMAIN-SUFFIX,github.com,PROXY
+  - DOMAIN-SUFFIX,gitlab.com,PROXY
+  - DOMAIN-KEYWORD,google,PROXY
+  - DOMAIN-KEYWORD,facebook,PROXY
+  - DOMAIN-KEYWORD,youtube,Streaming
+  - DOMAIN-KEYWORD,twitter,PROXY
+  - DOMAIN-KEYWORD,instagram,PROXY
+  - DOMAIN-KEYWORD,netflix,Streaming
+  - DOMAIN-SUFFIX,sci-hub.tw,PROXY
+  - DOMAIN-SUFFIX,sci-hub.se,PROXY
+  - DOMAIN-SUFFIX,sci-hub.st,PROXY
+
+  # 游戏平台
+  - DOMAIN-SUFFIX,steam.com,Game
+  - DOMAIN-SUFFIX,steamcontent.com,Game
+  - DOMAIN-SUFFIX,epicgames.com,Game
+  - DOMAIN-SUFFIX,origin.com,Game
+  - DOMAIN-SUFFIX,battlenet.com,Game
+
+  # Microsoft 服务
+  - DOMAIN-SUFFIX,microsoft.com,Microsoft
+  - DOMAIN-SUFFIX,windows.com,Microsoft
+  - DOMAIN-SUFFIX,office.com,Microsoft
+  - DOMAIN-SUFFIX,live.com,Microsoft
+
+  # Apple 服务
+  - DOMAIN-SUFFIX,apple.com,Apple
+  - DOMAIN-SUFFIX,icloud.com,Apple
+  - DOMAIN-SUFFIX,mzstatic.com,Apple
+
+  # 最终规则
+  - GEOIP,CN,DIRECT
+  - MATCH,Final
+
+# 连接管理
+connection-manager:
+  enable: true
+  interval: 30
+  timeout: 60
+
+# 流量统计
+traffic-statistics:
+  enabled: true
+  interval: 60
+
+# 高级设置
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# 实验性功能
+experimental:
+  ignore-resolve-fail: true
+  sniff-tls-sni: true
+  tracing: true
