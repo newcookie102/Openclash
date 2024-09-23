@@ -1,0 +1,493 @@
+# OpenClash 完整配置文件
+
+# 基本设置
+mixed-port: 7890
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: false
+
+# 安全设置
+authentication:
+  - "admin:password"
+
+# DNS 设置
+dns:
+  enable: true
+  ipv6: false
+  listen: 0.0.0.0:53
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - 'localhost.ptlogin2.qq.com'
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+    - tls://dns.google:853
+  fallback:
+    - tls://1.1.1.1:853
+    - https://cloudflare-dns.com/dns-query
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+
+# TUN 设置
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - 198.18.0.2:53
+  auto-route: true
+  auto-detect-interface: true
+  mtu: 9000
+
+# 中国电信千兆宽带优化
+tcp-concurrent: true
+tcp-fast-open: true
+tcp-no-delay: true
+interface-name: eth0  # 根据实际网卡名称调整
+
+# 代理提供者
+proxy-providers:
+  my_proxy_provider:
+    type: http
+    url: "https://even.axxi.site/api/v1/client/subscribe?token=f0d5eda7efd87a99e2e94f8790276706"  # 替换为您的实际订阅地址
+    interval: 3600
+    path: ./my_proxy_provider.yaml
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+
+# 代理组
+proxy-groups:
+  - name: "Auto"
+    type: url-test
+    use:
+      - my_proxy_provider
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: "Fallback"
+    type: fallback
+    use:
+      - my_proxy_provider
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: "Load-Balance"
+    type: load-balance
+    use:
+      - my_proxy_provider
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: "PROXY"
+    type: select
+    proxies:
+      - Auto
+      - Fallback
+      - Load-Balance
+    use:
+      - my_proxy_provider
+
+  - name: "Streaming"
+    type: select
+    proxies:
+      - PROXY
+      - Auto
+      - Fallback
+    use:
+      - my_proxy_provider
+
+  - name: "Game"
+    type: select
+    proxies:
+      - DIRECT
+      - Auto
+      - Fallback
+
+  - name: "Apple"
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: "Microsoft"
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: "Final"
+    type: select
+    proxies:
+      - PROXY
+      - DIRECT
+
+# 规则提供者
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/BanAD.yaml"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  privacy:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/BanProgramAD.yaml"
+    path: ./ruleset/privacy.yaml
+    interval: 86400
+
+  streaming:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/ProxyMedia.yaml"
+    path: ./ruleset/streaming.yaml
+    interval: 86400
+
+  global:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/ProxyGFWlist.yaml"
+    path: ./ruleset/global.yaml
+    interval: 86400
+
+  china:
+    type: http
+    behavior: classical
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/ChinaDomain.yaml"
+    path: ./ruleset/china.yaml
+    interval: 86400
+
+  china_ip:
+    type: http
+    behavior: ipcidr
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/ChinaIp.yaml"
+    path: ./ruleset/china_ip.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/LocalAreaNetwork.yaml"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Providers/Telegram.yaml"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+# 规则设置
+rules:
+  # 本地网络直连
+  - RULE-SET,lancidr,DIRECT
+
+  # 广告和隐私跟踪拦截
+  - RULE-SET,reject,REJECT
+  - RULE-SET,privacy,REJECT
+
+  # 海外流媒体服务
+  - RULE-SET,streaming,Streaming
+
+  # Telegram
+  - RULE-SET,telegramcidr,PROXY
+
+  # 国内域名和 IP 直连
+  - RULE-SET,china,DIRECT
+  - RULE-SET,china_ip,DIRECT
+
+  # 常见国内网站和 APP 直连
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-KEYWORD,baidu,DIRECT
+  - DOMAIN-KEYWORD,alicdn,DIRECT
+  - DOMAIN-KEYWORD,alipay,DIRECT
+  - DOMAIN-KEYWORD,taobao,DIRECT
+  - DOMAIN-KEYWORD,jd,DIRECT
+  - DOMAIN-KEYWORD,qq,DIRECT
+  - DOMAIN-KEYWORD,tencent,DIRECT
+  - DOMAIN-KEYWORD,weixin,DIRECT
+  - DOMAIN-KEYWORD,bilibili,DIRECT
+
+  # 常见国外网站代理
+  - DOMAIN-SUFFIX,github.com,PROXY
+  - DOMAIN-SUFFIX,gitlab.com,PROXY
+  - DOMAIN-KEYWORD,google,PROXY
+  - DOMAIN-KEYWORD,facebook,PROXY
+  - DOMAIN-KEYWORD,youtube,Streaming
+  - DOMAIN-KEYWORD,twitter,PROXY
+  - DOMAIN-KEYWORD,instagram,PROXY
+  - DOMAIN-KEYWORD,netflix,Streaming
+  - DOMAIN-SUFFIX,sci-hub.tw,PROXY
+  - DOMAIN-SUFFIX,sci-hub.se,PROXY
+  - DOMAIN-SUFFIX,sci-hub.st,PROXY
+
+  # 游戏平台
+  - DOMAIN-SUFFIX,steam.com,Game
+  - DOMAIN-SUFFIX,steamcontent.com,Game
+  - DOMAIN-SUFFIX,epicgames.com,Game
+  - DOMAIN-SUFFIX,origin.com,Game
+  - DOMAIN-SUFFIX,battlenet.com,Game
+
+  # Microsoft 服务
+  - DOMAIN-SUFFIX,microsoft.com,Microsoft
+  - DOMAIN-SUFFIX,windows.com,Microsoft
+  - DOMAIN-SUFFIX,office.com,Microsoft
+  - DOMAIN-SUFFIX,live.com,Microsoft
+
+  # Apple 服务
+  - DOMAIN-SUFFIX,apple.com,Apple
+  - DOMAIN-SUFFIX,icloud.com,Apple
+  - DOMAIN-SUFFIX,mzstatic.com,Apple
+
+  # 国外常见域名列表
+  - DOMAIN-SUFFIX,amazon.com,PROXY
+  - DOMAIN-SUFFIX,amazonaws.com,PROXY
+  - DOMAIN-SUFFIX,cloudfront.net,PROXY
+  - DOMAIN-SUFFIX,akamai.net,PROXY
+  - DOMAIN-SUFFIX,whatsapp.com,PROXY
+  - DOMAIN-SUFFIX,whatsapp.net,PROXY
+  - DOMAIN-SUFFIX,linkedin.com,PROXY
+  - DOMAIN-SUFFIX,reddit.com,PROXY
+  - DOMAIN-SUFFIX,medium.com,PROXY
+  - DOMAIN-SUFFIX,wikipedia.org,PROXY
+  - DOMAIN-SUFFIX,wikimedia.org,PROXY
+
+  # 国外媒体
+  - DOMAIN-SUFFIX,bbc.com,PROXY
+  - DOMAIN-SUFFIX,bbc.co.uk,PROXY
+  - DOMAIN-SUFFIX,nytimes.com,PROXY
+  - DOMAIN-SUFFIX,cnn.com,PROXY
+
+  # 开发相关
+  - DOMAIN-SUFFIX,docker.com,PROXY
+  - DOMAIN-SUFFIX,npmjs.com,PROXY
+  - DOMAIN-SUFFIX,gravatar.com,PROXY
+
+  # 学术网站
+  - DOMAIN-SUFFIX,researchgate.net,PROXY
+  - DOMAIN-SUFFIX,springer.com,PROXY
+  - DOMAIN-SUFFIX,nature.com,PROXY
+  - DOMAIN-SUFFIX,sciencemag.org,PROXY
+
+  # 常见广告域名屏蔽
+  - DOMAIN-KEYWORD,admarvel,REJECT
+  - DOMAIN-KEYWORD,admaster,REJECT
+  - DOMAIN-KEYWORD,adsage,REJECT
+  - DOMAIN-KEYWORD,adsensor,REJECT
+  - DOMAIN-KEYWORD,adservice,REJECT
+  - DOMAIN-KEYWORD,adsmogo,REJECT
+  - DOMAIN-KEYWORD,adsrvmedia,REJECT
+  - DOMAIN-KEYWORD,adsserving,REJECT
+  - DOMAIN-KEYWORD,adwords,REJECT
+  - DOMAIN-KEYWORD,analysis,REJECT
+  - DOMAIN-KEYWORD,applovin,REJECT
+  - DOMAIN-KEYWORD,domob,REJECT
+  - DOMAIN-KEYWORD,duomeng,REJECT
+  - DOMAIN-KEYWORD,dwtrack,REJECT
+  - DOMAIN-KEYWORD,guanggao,REJECT
+  - DOMAIN-KEYWORD,omgmta,REJECT
+  - DOMAIN-KEYWORD,omniture,REJECT
+  - DOMAIN-KEYWORD,openx,REJECT
+  - DOMAIN-KEYWORD,partnerad,REJECT
+  - DOMAIN-KEYWORD,pingfore,REJECT
+  - DOMAIN-KEYWORD,supersonicads,REJECT
+  - DOMAIN-KEYWORD,tracking,REJECT
+  - DOMAIN-KEYWORD,uedas,REJECT
+  - DOMAIN-KEYWORD,umeng,REJECT
+  - DOMAIN-KEYWORD,usage,REJECT
+  - DOMAIN-KEYWORD,wlmonitor,REJECT
+  - DOMAIN-KEYWORD,zjtoolbar,REJECT
+
+  # 常见国内域名直连
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-KEYWORD,-cn,DIRECT
+
+  # 中国电信相关域名直连
+  - DOMAIN-SUFFIX,189.cn,DIRECT
+  - DOMAIN-SUFFIX,21cn.com,DIRECT
+
+  # 中国移动相关域名直连
+  - DOMAIN-SUFFIX,10086.cn,DIRECT
+  - DOMAIN-SUFFIX,cmcc.com,DIRECT
+
+  # 中国联通相关域名直连
+  - DOMAIN-SUFFIX,10010.com,DIRECT
+  - DOMAIN-SUFFIX,chinaunicom.com,DIRECT
+
+  # 中国广电相关域名直连
+  - DOMAIN-SUFFIX,cbg.cn,DIRECT
+
+  # 局域网地址直连
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - IP-CIDR,10.0.0.0/8,DIRECT
+  - IP-CIDR,172.16.0.0/12,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT
+  - IP-CIDR,100.64.0.0/10,DIRECT
+
+  # 最终规则
+  - GEOIP,CN,DIRECT
+  - MATCH,Final
+
+# 高级设置
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# 实验性功能
+experimental:
+  ignore-resolve-fail: true
+  sniff-tls-sni: true
+  tracing: true
+
+# 连接管理
+connection-manager:
+  enable: true
+  interval: 30
+  timeout: 60
+
+# 流量统计
+traffic-statistics:
+  enabled: true
+  interval: 60
+
+# 自定义局域网 IP 段
+lan-interface:
+  - eth0
+  - wlan0
+
+# 中国电信千兆宽带优化
+tcp-concurrent: true
+tcp-fast-open: true
+tcp-no-delay: true
+keep-alive-interval: 30
+
+# API 设置
+external-controller: 0.0.0.0:9090
+secret: "your_secret_key_here"
+
+# UI 设置
+external-ui: /usr/share/openclash/dashboard
+
+# 日志设置
+log-level: info
+log-file: /var/log/openclash.log
+
+# 自动更新配置
+auto-update:
+  enable: true
+  interval: 24
+  proxy: true
+
+# 自定义节点测速 URL
+url-test-url: http://www.gstatic.com/generate_204
+
+# 自定义 GeoIP 数据库
+geox-url:
+  geoip: "https://cdn.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country.mmdb"
+  geosite: "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat"
+
+# 自定义 DNS 映射
+hosts:
+  'mtalk.google.com': 108.177.125.188
+  'dl.google.com': 180.163.151.161
+  'dl.l.google.com': 180.163.151.161
+
+# 自定义路由表
+routing-mark: 6666
+
+# 进程匹配模式
+process-name:
+  - name: clash
+    behavior: direct
+  - name: nginx
+    behavior: direct
+  - name: redis-server
+    behavior: direct
+
+# 自定义脚本
+script:
+  code: |
+    def main(ctx, metadata):
+      ip = metadata["dst_ip"] or ctx.resolve_ip(metadata["host"])
+      if ip == "":
+        return "DIRECT"
+      code = ctx.geoip(ip)
+      if code == "CN":
+        return "DIRECT"
+      return "PROXY"
+
+# 自定义 Clash 启动参数
+clash-for-android:
+  append-system-dns: true
+
+# 自定义 HTTP 头
+custom-headers:
+  - 'User-Agent: clash-verge/v1.0.0'
+
+# 中国电信千兆宽带额外优化
+interface-name: eth0  # 请根据实际网卡名称调整
+mtu: 1500
+socket-buffer-size: 16M
+send-buffer-size: 16M
+recv-buffer-size: 16M
+
+# 优化 DNS 查询
+dns:
+  enable: true
+  use-hosts: true
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 180.76.76.76
+  fallback:
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
+
+# 优化 TUN 模式
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+  auto-route: true
+  auto-detect-interface: true
+
+# 高级性能优化
+profile:
+  store-selected: true
+  store-fake-ip: true
+  tracing: true
+
+# 自定义规则
+custom-rules:
+  - DOMAIN-SUFFIX,custom-domain.com,PROXY
+  - IP-CIDR,192.168.100.0/24,DIRECT
+
+# 定期清理缓存
+cache:
+  enable: true
+  size: 10000
+  ttl: 60
+
+# 启用 Stun 服务
+stun:
+  enable: true
+  server: stun.l.google.com:19302
+
+# 配置文件结束
