@@ -1,0 +1,27 @@
+# Claude Rule List
+# This list contains domains associated with Claude services
+
+# Claude API endpoints
+claude.ai
+api.claude.ai
+
+# Claude's support and documentation
+support.claude.ai
+docs.claude.ai
+
+# Claude's official website
+www.claude.ai
+portal.claude.ai
+
+# Claude subdomains for various services
+chat.claude.ai
+app.claude.ai
+beta.claude.ai
+
+# Claude CDN and assets
+cdn.claude.ai
+static.claude.ai
+
+# Other related Claude domains
+auth.claude.ai
+login.claude.ai
